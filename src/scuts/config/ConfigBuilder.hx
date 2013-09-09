@@ -1,11 +1,15 @@
 
 package scuts.config;
 
+#if macro
 
 import haxe.macro.Context;
 import haxe.macro.Expr;
 import haxe.macro.Type;
 import haxe.macro.TypeTools;
+
+#end
+
 
 class ConfigBuilder
 {
@@ -64,7 +68,8 @@ class ConfigBuilder
 
 	}
 
-	static function anonToClassField (f:{field:String, expr:Expr}, pack:Array<String>, name, rootName, ?doc : String = null):Array<Field> {
+	static function anonToClassField (f:{field:String, expr:Expr}, pack:Array<String>, name, rootName, ?doc : String = null):Array<Field> 
+	{
 		return switch (f.expr.expr) {
 			case EMeta(m, e) if (m.name == ":doc"):
 			
