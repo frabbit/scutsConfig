@@ -177,12 +177,42 @@ class ConfigBuilder
 
 	public static function m1 (pack, name,e:Expr):TypeDefinition 
 	{
-		var ct = TPath({pack:[],params:[],name:name});
+
+		var typePath = {pack:[],params:[],name:name};
+		var ct = TPath(typePath);
 		var newFun = 
 			macro function (parent:$ct) {
 				this.context = this;
 				this.parent = parent;
 			};
+
+
+
+		var createRetExpr = { expr : ENew(typePath, [macro null]), pos : e.pos };
+
+		var createParentRetExpr = { expr : ENew(typePath, [macro parent]), pos : e.pos };
+
+		var staticCreate = 
+			switch(
+				(macro function () {
+					return $createRetExpr;
+				}).expr
+			) {
+				case EFunction(_,f):f;
+				case _ : null;	
+			}
+
+		var staticExtend = 
+			switch(
+				(macro function (parent:$ct) {
+					return $createParentRetExpr;
+				}).expr
+			) {
+				case EFunction(_,f):f;
+				case _ : null;	
+			}
+
+
 		var f = switch (newFun.expr) {
 			case EFunction(_,f):f;
 			case _ : null;
@@ -203,8 +233,20 @@ class ConfigBuilder
 			},
 			{
 				name : "new",
-				access : [APublic],
+				access : [],
 				kind : FFun(f),
+				pos : e.pos
+			},
+			{
+				name : "create",
+				access : [APublic, AStatic],
+				kind : FFun(staticCreate),
+				pos : e.pos
+			},
+			{
+				name : "extend",
+				access : [APublic, AStatic],
+				kind : FFun(staticExtend),
 				pos : e.pos
 			}
 		];

@@ -1,6 +1,8 @@
 
 package scuts.config;
 
+using StringTools;
+
 #if macro
 
 import haxe.macro.Context;
@@ -163,7 +165,7 @@ class OverlayConfigBuilder {
 
 	
 
-	public static function overlaySettings (e:Expr, pack:Array<String>, name:String, overlayPack:Array<String>, overlayName : String):Type {
+	public static function overlaySettings (e:Expr, pack:Array<String>, name:String, overlayPack:Array<String>, overlayName : String, requireAll : Bool = false):Type {
 		
 		var t = Context.follow(Context.getType(pack.join(".") + (if (pack.length > 0) "." else "") + name),false);
 		
@@ -173,7 +175,7 @@ class OverlayConfigBuilder {
 				var name = t1.get().name;
 				var pack = t1.get().pack;
 
-				makeOverlayType(t,e, pack, name, overlayPack, overlayName);
+				makeOverlayType(t,e, pack, name, overlayPack, overlayName, requireAll);
 			case _:
 				throw "assert";
 		}
@@ -181,13 +183,15 @@ class OverlayConfigBuilder {
 	}
 
 
-	public static function makeOverlayType(t:Type, e:Expr, pack:Array<String>, name:String, overlayPack:Array<String>, overlayName:String):Type
+
+
+	static function makeOverlayType(t:Type, e:Expr, pack:Array<String>, name:String, overlayPack:Array<String>, overlayName:String, requireAll : Bool):Type
 	{
 		var td = baseTypeDef(pack, name, overlayPack, overlayName);
 		function switchType(t1) return switch [t1,e.expr] 
 		{
 			case [TInst(t,_), EObjectDecl(fields)]:
-				makeOverlaySettingsFromFields(fields, t.get().fields.get(), pack, name, name, overlayPack, overlayName);
+				makeOverlaySettingsFromFields(e.pos, fields, t.get().fields.get(), pack, name, name, overlayPack, overlayName, requireAll);
 			case [TLazy(f),_]: switchType(f());
 			case _:
 				throw "Invalid";
@@ -205,13 +209,29 @@ class OverlayConfigBuilder {
 		return Context.getType(clName);
 	}
 
-	public static function makeOverlaySettingsFromFields (fields:Array<{ field:String, expr:Expr}>, clFields:Array<ClassField>, pack:Array<String>, name:String, rootName:String, overlayPack:Array<String>, overlayName:String):Array<Field> 
+	public static function makeOverlaySettingsFromFields (pos:Position, fields:Array<{ field:String, expr:Expr}>, clFields:Array<ClassField>, pack:Array<String>, name:String, rootName:String, overlayPack:Array<String>, overlayName:String, requireAll:Bool):Array<Field> 
 	{
+
+
 		var f1Fields = clFields;
 
 		var newFields:Array<Field> = [];
 
-		
+		var fieldsToCheck = f1Fields.map(function (cf) return cf.name);
+
+
+
+		var fieldsToCheck = f1Fields.filter(function (cf) return cf.isPublic).map(function (cf) return cf.name);
+
+		//trace(fieldsToCheck);
+		//trace(fields.map(function (x) return x.field));
+
+		if (requireAll && fieldsToCheck.length > fields.length) {
+			var fieldsStrings = fields.map(function (x) return x.field);
+			var missings = fieldsToCheck.filter(function (x) return !Lambda.has(fieldsStrings, x));
+
+			Context.warning("ERROR: Overlay Settings " + overlayPack.join(".") + "." + overlayName + " requires all fields of " + pack.join(".") + "." +  name + "\nWarning: ERROR: Missing Fields: '" + missings.join("','") + "'", pos);
+		}
 
 		for (f1 in f1Fields) {
 			var found = false;
@@ -223,7 +243,10 @@ class OverlayConfigBuilder {
 					}
 				}
 				if (!valid) {
-					throw "BaseConfiguration has no field " + f2.field;
+					trace(fieldsToCheck);
+					
+					Context.warning("Overlay Settings " + overlayPack.join(".") + "." + overlayName + " has no field '" + f2.field + "' required by " + pack.join(".") + "." + name, pos);
+					//throw "BaseConfiguration has no field " + f2.field;
 				}
 
 				if (f2.field == f1.name) {
@@ -241,7 +264,7 @@ class OverlayConfigBuilder {
 										var subOverlayName = overlayName + f1.name.charAt(0).toUpperCase() + f1.name.substr(1);
 										var td = subTypeDef(pack, subName,overlayPack, subOverlayName,rootName);
 
-										var fields = makeOverlaySettingsFromFields(fields, clFields, pack, subName, rootName, overlayPack, subOverlayName);
+										var fields = makeOverlaySettingsFromFields(f2.expr.pos, fields, clFields, pack, subName, rootName, overlayPack, subOverlayName, requireAll);
 
 
 
