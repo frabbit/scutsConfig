@@ -269,7 +269,7 @@ class MapOverlayBuilder {
 					var res = switch (Type.typeof(mapVal)) {
 						case TClass(c) if (Type.getClassName(c) == "String"):
 							
-							apx.ConfigTools.replaceMapDynamic(mapVal, this.context);
+							scuts.config.ConfigTools.replaceMapDynamic(mapVal, this.context);
 						case _:
 							throw "Runtime Exception cannot convert " + Std.string(mapVal) + " to String";
 					}		
