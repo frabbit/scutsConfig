@@ -140,15 +140,18 @@ class ConfigBuilder
 	
 	public static function m3 (pack:Array<String>, fieldName:String, subTypeName:String, doc:Null<String>, expr:Expr):Array<Field> 
 	{
-		
+		//trace("subTypeName");
+		var eNew = { expr : ENew({ name : subTypeName, params : [], pack : pack}, [macro null, macro this.context]), pos : expr.pos };
 		var newFun = 
 			macro function () {
 				if ($i{fieldName} == null) {
-					$i{fieldName} = new $subTypeName(null, this.context);
+					$i{fieldName} = $eNew;
 					
 				}
 				return $i{fieldName};
 			};
+
+		
 		var f = switch (newFun.expr) {
 			case EFunction(_,f):f;
 			case _ : null;
@@ -178,7 +181,7 @@ class ConfigBuilder
 	public static function m1 (pack, name,e:Expr):TypeDefinition 
 	{
 
-		var typePath = {pack:[],params:[],name:name};
+		var typePath:TypePath = {pack:[],params:[],name:name};
 		var ct = TPath(typePath);
 		var newFun = 
 			macro function (parent:$ct) {
