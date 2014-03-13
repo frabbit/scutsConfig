@@ -63,9 +63,12 @@ class OverlayConfigBuilder {
 			macro function (parent:$ct) {
 				super(parent);
 			};
+
+
+		var eNew = { expr : ENew({ name : overlayName, params : [], pack : []}, [macro parent]), pos : Context.currentPos() };
 		var staticCreateExpr = 
 			macro function (parent:$ct):$ct {
-				return new $overlayName(parent);
+				return $eNew;
 				
 			};
 
@@ -121,9 +124,11 @@ class OverlayConfigBuilder {
 				super(parent, context);
 				
 			};
+
+		var eNew = { expr : ENew({ name : overlayName, params : [], pack : []}, [macro parent, macro context]), pos : Context.currentPos() };
 		var staticCreateExpr = 
 			macro function (parent:$ct, context):$ct {
-				return new $overlayName(parent, context);
+				return $eNew;
 				
 			};
 		var f = switch (constructorExpr.expr) {

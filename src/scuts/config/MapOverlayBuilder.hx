@@ -15,12 +15,14 @@ class MapOverlayBuilder {
 	public static function subOverlayFields (fieldName:String, subTypeName:String, overlayPack:Array<String>, subOverlayName:String):Array<Field> 
 	{
 
-		var fullName = subOverlayName;
+		
+		var eNew = { expr : ENew({ name : subOverlayName, params : [], pack : []}, [macro this.parent.$fieldName, macro this.context, macro this._map]), pos : Context.currentPos() };
+		
 
 		var newFun = 
 			macro function () {
 				if ($i{fieldName} == null) {
-					$i{fieldName} = new $fullName(this.parent.$fieldName, this.context, this._map);
+					$i{fieldName} = $eNew;
 				}
 				return $i{fieldName};
 			};
